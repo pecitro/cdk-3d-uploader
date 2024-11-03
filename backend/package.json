@@ -8,6 +8,7 @@
     "deploy": "run-s build zip update"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "3.685.0",
     "hono": "4.6.8"
   }
 }

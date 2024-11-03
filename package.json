@@ -5,8 +5,8 @@
   "scripts": {
     "format": "npx -ws biome format",
     "lint": "npx -ws biome lint",
-    "deploy": "npm -w frontend run build && npx -w infrastructure cdk deploy",
-    "dev:cdk": "npx -w infrastructure cdk watch",
+    "deploy": "npm -w frontend run build && npx -w cdk cdk deploy",
+    "dev:cdk": "npx -w cdk cdk watch",
     "dev:front": "npm -w frontend run dev",
     "dev": "run-p dev:*"
   },
@@ -16,7 +16,8 @@
   "description": "",
   "workspaces": [
     "cdk",
-    "frontend"
+    "frontend",
+    "backend"
   ],
   "devDependencies": {
     "@biomejs/biome": "1.9.4",
