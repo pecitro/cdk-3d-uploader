@@ -78,6 +78,13 @@ export class CdkStack extends cdk.Stack {
             cachePolicy: cdk.aws_cloudfront.CachePolicy.CACHING_DISABLED,
             allowedMethods: cdk.aws_cloudfront.AllowedMethods.ALLOW_ALL,
           },
+          "/pointclouds/*": {
+            origin:
+              cdk.aws_cloudfront_origins.S3BucketOrigin.withOriginAccessControl(
+                appDataBucket
+              ),
+            cachePolicy: cdk.aws_cloudfront.CachePolicy.CACHING_DISABLED,
+          },
         },
       }
     );
