@@ -76,7 +76,7 @@
   );
 </script>
 
-<div class="h-screen bg-gray-300 p-4">
+<div class="h-screen bg-gray-200 p-4">
   <div class="max-w mx-auto rounded-lg border border-gray-300 bg-white p-4 shadow-md">
     <h1 class="mb-4 text-3xl font-bold">3Dモデルビューワー</h1>
     <div class="mb-4 flex flex-wrap">
@@ -147,7 +147,7 @@
 
     <a
       href="/potree/index.html?file={selected_prefecture}/{selected_facility}/{selected_version}/viewer/{selected_viewer}"
-      class="rounded bg-blue-500 px-4 py-2 font-bold text-white hover:bg-blue-700"
+      class="rounded-md border border-transparent bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
       target="_blank"
     >
       Potreeで開く
