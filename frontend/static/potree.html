@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="ja">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="description" content="" />
+  <meta name="author" content="" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <title>Potree Viewer</title>
+
+  <link rel="stylesheet" type="text/css" href="./potree/build/potree/potree.css" />
+  <link rel="stylesheet" type="text/css" href="./potree/libs/jquery-ui/jquery-ui.min.css" />
+  <link rel="stylesheet" type="text/css" href="./potree/libs/openlayers3/ol.css" />
+  <link rel="stylesheet" type="text/css" href="./potree/libs/spectrum/spectrum.css" />
+  <link rel="stylesheet" type="text/css" href="./potree/libs/jstree/themes/mixed/style.css" />
+
+
+  <style>
+    #potree_toolbar {
+      position: absolute;
+      z-index: 10000;
+      left: 10px;
+      top: 55px;
+      background: black;
+      color: white;
+      /* padding: 0.3em 0.8em; */
+      font-family: "system-ui";
+      border-radius: 0em 0em 0.3em 0.3em;
+      display: flex;
+    }
+
+    .potree_toolbar_label {
+      text-align: center;
+      font-size: smaller;
+      opacity: 0.9;
+    }
+
+    .potree_toolbar_separator {
+      background: white;
+      padding: 0px;
+      margin: 5px 10px;
+      width: 1px;
+    }
+  </style>
+</head>
+
+<body>
+  <script src="./potree/libs/jquery/jquery-3.1.1.min.js"></script>
+  <script src="./potree/libs/spectrum/spectrum.js"></script>
+  <script src="./potree/libs/jquery-ui/jquery-ui.min.js"></script>
+  <script src="./potree/libs/other/BinaryHeap.js"></script>
+  <script src="./potree/libs/tween/tween.min.js"></script>
+  <script src="./potree/libs/d3/d3.js"></script>
+  <script src="./potree/libs/proj4/proj4.js"></script>
+  <script src="./potree/libs/openlayers3/ol.js"></script>
+  <script src="./potree/libs/i18next/i18next.js"></script>
+  <script src="./potree/libs/jstree/jstree.js"></script>
+  <script src="./potree/libs/copc/index.js"></script>
+  <script src="./potree/build/potree/potree.js"></script>
+  <script src="./potree/libs/plasio/js/laslaz.js"></script>
+  <!-- <script src='https://cdnjs.cloudflare.com/ajax/libs/stats.js/r17/Stats.min.js' ;></script> -->
+
+  <!-- INCLUDE ADDITIONAL DEPENDENCIES HERE -->
+  <!-- INCLUDE SETTINGS HERE -->
+
+  <div class="potree_container" style="position: absolute; width: 100%; height: 100%; left: 0px; top: 0px">
+    <div id="potree_render_area">
+      <div id="potree_toolbar"></div>
+    </div>
+    <div id="potree_toolbar"></div>
+    <div id="potree_sidebar_container"></div>
+  </div>
+
+  <script type="module">
+    import Stats from "./potree/libs/three.js/libs/stats.module.js";
+    import * as THREE from "./potree/libs/three.js/build/three.module.js";
+    window.viewer = new Potree.Viewer(document.getElementById('potree_render_area'));
+
+    viewer.setEDLEnabled(true);
+    viewer.setFOV(60);
+    viewer.setPointBudget(2_000_000);
+    viewer.loadSettingsFromURL();
+    viewer.setDescription('');
+
+    viewer.loadGUI(() => {
+      viewer.setLanguage('jp');
+      $('#menu_appearance').next().show();
+      $('#menu_tools').next().show();
+      $('#menu_clipping').next().show();
+      viewer.toggleSidebar();
+    });
+
+
+    // ツールバーを追加
+    const elToolbar = $("#potree_toolbar");
+
+    // 低スペックモード用の設定ボタンを追加
+    const $lowSpecModeButton = $('<button>', {
+      text: '低スペックモード',
+      css: {
+        width: '150px',
+      },
+      click: () => {
+        enableLowSpecMode(viewer);
+      },
+    });
+    elToolbar.append($lowSpecModeButton);
+
+    // 低スペックモード用の設定ボタンを追加
+    const $disablelowSpecModeButton = $('<button>', {
+      text: '低スペックモード解除',
+      css: {
+        width: '150px',
+      },
+      click: () => {
+        disableLowSpecMode(viewer);
+      },
+    });
+    elToolbar.append($disablelowSpecModeButton);
+
+    // 低スペックモードの設定
+    function enableLowSpecMode(viewer) {
+      viewer.setPointBudget(500000);  // 点群の表示数を50万点に制限(デフォルトは100万点)
+      viewer.setEDLEnabled(false);    // EDL(Eye-Dome-Lighting)を無効化してレンダリング負荷を下げる
+      viewer.setMinNodeSize(100);      // 最小ノードサイズを大きくしてLOD(Level of Detail)の切り替えを早める
+
+      // モード表示
+      viewer.setDescription(`
+        低スペックモード
+        <br>
+        - 表示点数: 50万点
+        - 最小ノードサイズ: 100
+        - EDL: 無効`
+      );
+    }
+
+    // モードを解除する場合
+    function disableLowSpecMode(viewer) {
+      // 通常モードの設定
+      viewer.setPointBudget(2000000);
+      viewer.setEDLEnabled(true);
+      viewer.setMinNodeSize(30);
+
+      // モード表示を解除
+      viewer.setDescription('');
+    }
+
+
+
+    // URLパラメータからファイル名を取得
+    const url = new URL(window.location.href);
+    const params = url.searchParams;
+    console.log(params.get('file'));
+    const file = params.get('file');
+
+    Potree.loadPointCloud('/pointclouds/' + file, '', (e) => {
+      let scene = viewer.scene;
+      let pointcloud = e.pointcloud;
+
+      let material = pointcloud.material;
+      material.size = 1;
+      material.pointSizeType = Potree.PointSizeType.ADAPTIVE;
+      material.shape = Potree.PointShape.SQUARE;
+      material.activeAttributeName = 'rgba';
+
+      scene.addPointCloud(pointcloud);
+
+      viewer.fitToScreen();
+    });
+
+    // Statsを表示
+    // https://github.com/mrdoob/stats.js
+    if (!window.stats) {  // 重複して追加しないようにチェック
+      const stats = new Stats();
+      stats.showPanel(0);
+
+      // Potreeのサイドバーの隣に表示
+      stats.dom.style.position = 'absolute';
+      stats.dom.style.left = '60px';
+      stats.dom.style.top = '0px';
+      document.getElementById('potree_render_area').appendChild(stats.dom);
+
+      // アニメーションループを使用
+      function animate() {
+        stats.begin();  // 計測開始
+        stats.end();    // 計測終了
+        requestAnimationFrame(animate);
+      }
+      requestAnimationFrame(animate);
+    }
+  </script>
+</body>
+
+</html>

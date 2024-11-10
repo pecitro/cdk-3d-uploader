@@ -56,6 +56,11 @@ export class CdkStack extends cdk.Stack {
       authType: lambda.FunctionUrlAuthType.AWS_IAM,
     });
 
+    const appbucket_origin =
+      cdk.aws_cloudfront_origins.S3BucketOrigin.withOriginAccessControl(
+        appDataBucket
+      );
+
     // CloudFront ディストリビューションを作成
     const hogeDistribution = new cdk.aws_cloudfront.Distribution(
       this,
@@ -79,10 +84,11 @@ export class CdkStack extends cdk.Stack {
             allowedMethods: cdk.aws_cloudfront.AllowedMethods.ALLOW_ALL,
           },
           "/pointclouds/*": {
-            origin:
-              cdk.aws_cloudfront_origins.S3BucketOrigin.withOriginAccessControl(
-                appDataBucket
-              ),
+            origin: appbucket_origin,
+            cachePolicy: cdk.aws_cloudfront.CachePolicy.CACHING_DISABLED,
+          },
+          "/potree/*": {
+            origin: appbucket_origin,
             cachePolicy: cdk.aws_cloudfront.CachePolicy.CACHING_DISABLED,
           },
         },

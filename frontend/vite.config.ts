@@ -16,6 +16,10 @@ export default defineConfig({
       '/pointclouds': {
         target: 'https://d3s8tcjy4g9ua1.cloudfront.net',
         changeOrigin: true
+      },
+      '/potree': {
+        target: 'https://d3s8tcjy4g9ua1.cloudfront.net',
+        changeOrigin: true
       }
     }
   }
