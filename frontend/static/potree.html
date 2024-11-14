@@ -250,23 +250,66 @@
           // タッチ開始
           this.container.on('touchstart', (e) => {
             e.preventDefault();
-            this.active = true;
-            this.updateStickPosition(e.touches[0]);
+            if (this.active) return;  // 既にアクティブな場合は無視
+
+            const touch = this.findTouch(e.originalEvent.touches);
+            if (touch) {
+              this.active = true;
+              this.touchId = touch.identifier;  // タッチIDを保存
+              this.updateStickPosition(touch);
+            }
           });
 
           // タッチ移動
           $(document).on('touchmove', (e) => {
-            if (!this.active) return;
             e.preventDefault();
-            this.updateStickPosition(e.touches[0]);
+            if (!this.active) return;
+
+            const touch = this.findTouchById(e.originalEvent.touches);
+            if (touch) {
+              this.updateStickPosition(touch);
+            }
           });
 
           // タッチ終了
-          $(document).on('touchend touchcancel', () => {
+          $(document).on('touchend touchcancel', (e) => {
             if (!this.active) return;
-            this.active = false;
-            this.resetStick();
+
+            // 現在のタッチが終了したかチェック
+            const touch = this.findTouchById(e.originalEvent.touches);
+            if (!touch) {
+              this.active = false;
+              this.touchId = null;
+              this.resetStick();
+            }
           });
+        }
+
+        // タッチイベントからこのジョイスティックのための最適なタッチを見つける
+        findTouch(touches) {
+          const rect = this.container[0].getBoundingClientRect();
+          for (let i = 0; i < touches.length; i++) {
+            const touch = touches[i];
+            const x = touch.clientX;
+            const y = touch.clientY;
+
+            // タッチがこのジョイスティックの範囲内かチェック
+            if (x >= rect.left && x <= rect.right &&
+              y >= rect.top && y <= rect.bottom) {
+              return touch;
+            }
+          }
+          return null;
+        }
+
+        // 特定のタッチIDを持つタッチを見つける
+        findTouchById(touches) {
+          for (let i = 0; i < touches.length; i++) {
+            if (touches[i].identifier === this.touchId) {
+              return touches[i];
+            }
+          }
+          return null;
         }
 
         updateStickPosition(touch) {
