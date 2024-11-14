@@ -190,7 +190,6 @@
     }
 
 
-
     // 仮想ジョイスティックの実装
     function addVirtualJoysticks(viewer) {
       // モバイルデバイスチェック
@@ -241,6 +240,7 @@
           this.centerY = 0;
           this.active = false;
           this.value = { x: 0, y: 0 };
+          this.touchId = null;  // タッチIDを追跡
 
           this.setupEvents();
           $(viewer.renderArea).append(this.container);
@@ -317,23 +317,36 @@
         const lookValue = lookJoystick.getValue();
         // console.log(moveValue, lookValue);
 
+
         if (moveValue.x !== 0 || moveValue.y !== 0) {
+          // Potreeのカメラとコントロールを取得
+          const camera = viewer.scene.getActiveCamera();
+
+          // 現在のカメラの向きを取得
+          const direction = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
+          const right = new THREE.Vector3(1, 0, 0).applyQuaternion(camera.quaternion);
+
+          // 移動量を計算
+          const moveDirection = new THREE.Vector3();
+
           // 移動速度の設定
           const moveSpeed = 1.0;
 
-          // カメラの向きに基づいて移動方向を計算
-          const camera = viewer.scene.getActiveCamera();
-          const forward = camera.getWorldDirection(new THREE.Vector3());
-          const right = forward.clone().cross(new THREE.Vector3(0, 1, 0));
-
           // 前後移動
-          const forwardMovement = forward.multiplyScalar(moveValue.y * moveSpeed);
+          if (moveValue.y !== 0) {
+            moveDirection.add(direction.clone().multiplyScalar(-moveValue.y * moveSpeed));
+          }
+
           // 左右移動
-          const rightMovement = right.multiplyScalar(moveValue.x * moveSpeed);
+          if (moveValue.x !== 0) {
+            moveDirection.add(right.clone().multiplyScalar(moveValue.x * moveSpeed));
+          }
 
           // カメラ位置の更新
-          camera.position.add(forwardMovement);
-          camera.position.add(rightMovement);
+          camera.position.add(moveDirection);
+
+          // Potreeのカメラ制御を更新
+          viewer.scene.view.position.copy(camera.position);
         }
 
         if (lookValue.x !== 0 || lookValue.y !== 0) {
@@ -342,13 +355,11 @@
 
           // カメラの回転
           const camera = viewer.scene.getActiveCamera();
-          camera.rotation.y -= lookValue.x * rotateSpeed;
-          camera.rotation.x -= lookValue.y * Math.PI / 180;
-          // console.log(camera.rotation.x);
+          viewer.scene.view.yaw -= lookValue.x * rotateSpeed;
 
           // 上下の視点移動を制限付きで適用
-          // const newRotationX = camera.rotation.x - lookValue.y * rotateSpeed;
-          // camera.rotation.x = Math.max(-Math.PI / 3, Math.min(Math.PI / 3, newRotationX));
+          const newPitch = viewer.scene.view.pitch - lookValue.y * rotateSpeed;
+          viewer.scene.view.pitch = Math.max(-Math.PI / 3, Math.min(Math.PI / 3, newPitch));
         }
       }
 
