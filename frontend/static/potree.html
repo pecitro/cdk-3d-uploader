@@ -87,7 +87,7 @@
       $('#menu_appearance').next().show();
       $('#menu_tools').next().show();
       $('#menu_clipping').next().show();
-      viewer.toggleSidebar();
+      // viewer.toggleSidebar();
     });
 
 
@@ -188,6 +188,215 @@
       }
       requestAnimationFrame(animate);
     }
+
+
+
+    // 仮想ジョイスティックの実装
+    function addVirtualJoysticks(viewer) {
+      // モバイルデバイスチェック
+      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+      if (!isMobile) return;
+
+      // ジョイスティックのスタイル定義
+      const joystickStyle = {
+        position: 'absolute',
+        width: '120px',
+        height: '120px',
+        backgroundColor: 'rgba(255, 255, 255, 0.2)',
+        border: '2px solid rgba(255, 255, 255, 0.4)',
+        borderRadius: '50%',
+        touchAction: 'none',
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        zIndex: 1000
+      };
+
+      // スティック部分のスタイル
+      const stickStyle = {
+        position: 'absolute',
+        width: '40px',
+        height: '40px',
+        backgroundColor: 'rgba(255, 255, 255, 0.6)',
+        borderRadius: '50%',
+        cursor: 'pointer',
+        transition: 'transform 0.1s'
+      };
+
+      // ジョイスティッククラスの定義
+      class VirtualJoystick {
+        constructor(options) {
+          this.container = $('<div>', {
+            css: {
+              ...joystickStyle,
+              left: options.left,
+              bottom: options.bottom
+            }
+          });
+
+          this.stick = $('<div>', { css: stickStyle });
+          this.container.append(this.stick);
+
+          this.centerX = 0;
+          this.centerY = 0;
+          this.active = false;
+          this.value = { x: 0, y: 0 };
+
+          this.setupEvents();
+          $(viewer.renderArea).append(this.container);
+        }
+
+        setupEvents() {
+          // タッチ開始
+          this.container.on('touchstart', (e) => {
+            e.preventDefault();
+            this.active = true;
+            this.updateStickPosition(e.touches[0]);
+          });
+
+          // タッチ移動
+          $(document).on('touchmove', (e) => {
+            if (!this.active) return;
+            e.preventDefault();
+            this.updateStickPosition(e.touches[0]);
+          });
+
+          // タッチ終了
+          $(document).on('touchend touchcancel', () => {
+            if (!this.active) return;
+            this.active = false;
+            this.resetStick();
+          });
+        }
+
+        updateStickPosition(touch) {
+          const rect = this.container[0].getBoundingClientRect();
+          const x = touch.clientX - rect.left - rect.width / 2;
+          const y = touch.clientY - rect.top - rect.height / 2;
+
+          // スティックの移動範囲を制限
+          const angle = Math.atan2(y - this.centerY, x - this.centerX);
+          const distance = Math.min(40, Math.hypot(x - this.centerX, y - this.centerY));
+
+          const stickX = this.centerX + distance * Math.cos(angle);
+          const stickY = this.centerY + distance * Math.sin(angle);
+
+          this.stick.css('transform', `translate(${stickX}px, ${stickY}px)`);
+
+          // 正規化された値を計算 (-1 から 1 の範囲)
+          this.value = {
+            x: (stickX - this.centerX) / 40,
+            y: (stickY - this.centerY) / 40
+          };
+        }
+
+        resetStick() {
+          this.stick.css('transform', 'translate(0px, 0px)');
+          this.value = { x: 0, y: 0 };
+        }
+
+        getValue() {
+          return this.value;
+        }
+      }
+
+      // 移動用と視点用の2つのジョイスティックを作成
+      const moveJoystick = new VirtualJoystick({
+        left: '20px',
+        bottom: '20px'
+      });
+
+      const lookJoystick = new VirtualJoystick({
+        left: 'calc(100% - 140px)',
+        bottom: '20px'
+      });
+
+      // カメラの移動と回転を更新
+      function updateCamera() {
+        const moveValue = moveJoystick.getValue();
+        const lookValue = lookJoystick.getValue();
+        // console.log(moveValue, lookValue);
+
+        if (moveValue.x !== 0 || moveValue.y !== 0) {
+          // 移動速度の設定
+          const moveSpeed = 1.0;
+
+          // カメラの向きに基づいて移動方向を計算
+          const camera = viewer.scene.getActiveCamera();
+          const forward = camera.getWorldDirection(new THREE.Vector3());
+          const right = forward.clone().cross(new THREE.Vector3(0, 1, 0));
+
+          // 前後移動
+          const forwardMovement = forward.multiplyScalar(moveValue.y * moveSpeed);
+          // 左右移動
+          const rightMovement = right.multiplyScalar(moveValue.x * moveSpeed);
+
+          // カメラ位置の更新
+          camera.position.add(forwardMovement);
+          camera.position.add(rightMovement);
+        }
+
+        if (lookValue.x !== 0 || lookValue.y !== 0) {
+          // 回転速度の設定
+          const rotateSpeed = 0.025;
+
+          // カメラの回転
+          const camera = viewer.scene.getActiveCamera();
+          camera.rotation.y -= lookValue.x * rotateSpeed;
+          camera.rotation.x -= lookValue.y * Math.PI / 180;
+          // console.log(camera.rotation.x);
+
+          // 上下の視点移動を制限付きで適用
+          // const newRotationX = camera.rotation.x - lookValue.y * rotateSpeed;
+          // camera.rotation.x = Math.max(-Math.PI / 3, Math.min(Math.PI / 3, newRotationX));
+        }
+      }
+
+      // アニメーションループでカメラを更新
+      function animate() {
+        updateCamera();
+        requestAnimationFrame(animate);
+      }
+      animate();
+
+      // ジョイスティック表示/非表示の切り替えボタン
+      const toggleBtn = $('<button>', {
+        text: '🎮',
+        css: {
+          position: 'absolute',
+          top: '10px',
+          right: '10px',
+          padding: '10px',
+          fontSize: '20px',
+          backgroundColor: 'rgba(255, 255, 255, 0.7)',
+          border: 'none',
+          borderRadius: '5px',
+          zIndex: 1001
+        }
+      }).click(() => {
+        moveJoystick.container.toggle();
+        lookJoystick.container.toggle();
+      });
+
+      $(viewer.renderArea).append(toggleBtn);
+
+      return {
+        moveJoystick,
+        lookJoystick,
+        // ジョイスティックの有効/無効を切り替え
+        setEnabled: (enabled) => {
+          moveJoystick.container.toggle(enabled);
+          lookJoystick.container.toggle(enabled);
+        },
+        // 感度設定
+        setSensitivity: (move, look) => {
+          moveSpeed = move;
+          rotateSpeed = look;
+        }
+      };
+    }
+    // 使用例
+    const joysticks = addVirtualJoysticks(viewer);
   </script>
 </body>
 
