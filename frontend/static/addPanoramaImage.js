@@ -143,7 +143,7 @@ export default function addPanoramaImage(viewer) {
       color: 0x4287f5,
       wireframe: false,
       transparent: true,
-      opacity: 0.1,
+      opacity: 1,
       depthTest: true
     });
 
