@@ -70,112 +70,14 @@
       z-index: 1;
     }
 
-    /* アノテーションマーカー */
-    #annotation-controls {
-      position: absolute;
-      left: 10px;
-      top: 90px;
-      z-index: 1000;
-      pointer-events: auto;
-    }
-
-    .annotation-marker {
-      position: absolute;
-      width: 32px;
-      height: 32px;
-      cursor: pointer;
-      transform: translate(-50%, -50%);
-      z-index: 1000;
-      pointer-events: auto;
-    }
-
-    .annotation-marker::before {
-      content: "";
-      position: absolute;
-      width: 12px;
-      height: 12px;
-      background: #ff4081;
-      border-radius: 50%;
-      border: 2px solid white;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-    }
-
-    .annotation-label {
-      position: absolute;
-      left: 20px;
-      top: -10px;
-      background: rgba(0, 0, 0, 0.8);
-      color: white;
-      padding: 4px 8px;
-      border-radius: 4px;
-      font-size: 14px;
-      white-space: nowrap;
-    }
-
-    .annotation-window {
-      position: absolute;
-      background: white;
-      border-radius: 8px;
-      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
-      padding: 16px;
-      min-width: 200px;
-      max-width: 400px;
-      display: none;
-      z-index: 1001;
-    }
-
-    .annotation-window.active {
-      display: block;
-    }
-
-    .annotation-window-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 12px;
-    }
-
-    .annotation-window-title {
-      font-weight: bold;
-      font-size: 16px;
-    }
-
-    .annotation-window-close {
-      cursor: pointer;
-      padding: 4px;
-    }
-
-    .annotation-window-content {
-      font-size: 14px;
-      line-height: 1.5;
-    }
-
-    .annotation-button {
-      background-color: #343a40;
+    /* button {
+      background: #444;
       color: white;
       border: none;
-      padding: 8px 12px;
-      font-size: 12px;
+      padding: 5px 10px;
+      margin: 5px;
       cursor: pointer;
-      border-radius: 3px;
-      margin: 2px;
-      opacity: 0.8;
-      transition: opacity 0.2s;
-    }
-
-    .annotation-button:hover {
-      opacity: 1;
-    }
-
-    #annotations-container {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      pointer-events: none;
-      z-index: 1000;
-    }
+    } */
   </style>
 </head>
 
@@ -200,15 +102,7 @@
 
   <div class="potree_container" style="position: absolute; width: 100%; height: 100%; left: 0px; top: 0px">
     <div id="potree_render_area">
-      <!-- <div id="potree_toolbar"></div> -->
-      <!-- アノテーションコントロール -->
-      <div id="annotation-controls" class="potree-control">
-        <button id="add-annotation" class="potree-button">
-          アノテーション追加
-        </button>
-      </div>
-      <!-- アノテーションコンテナ -->
-      <div id="annotations-container"></div>
+      <div id="potree_toolbar"></div>
     </div>
     <div id="potree_toolbar"></div>
     <div id="potree_sidebar_container"></div>
@@ -357,138 +251,6 @@
 
     // パノラマイメージを追加
     addPanoramaImage(viewer);
-
-
-
-    class AnnotationManager {
-      constructor(viewer) {
-        this.viewer = viewer; // Potreeのビューアーインスタンス
-        this.annotations = [];
-        this.activeWindow = null;
-        this.addMode = false;
-
-        this.init();
-      }
-
-      init() {
-        // アノテーション追加ボタンのイベントリスナー
-        document.getElementById('add-annotation').addEventListener('click', (e) => {
-          // イベントの伝播を停止
-          e.stopPropagation();
-          this.enableAddMode();
-        });
-
-        // クリックイベントの監視
-        document.getElementById('potree_render_area').addEventListener('click', (e) => {
-          // ボタンクリックを除外
-          if (e.target.closest('#annotation-controls')) {
-            return;
-          }
-
-          if (this.addMode) {
-            this.handleAddAnnotation(e);
-          }
-        });
-
-      }
-
-      enableAddMode() {
-        this.addMode = true;
-        document.body.style.cursor = 'crosshair';
-      }
-
-      handleAddAnnotation(e) {
-        // Potreeのビューポート座標を3D座標に変換
-        const rect = e.target.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
-
-        // ここでPotreeのAPIを使用して3D座標を取得
-        // const position = viewer.getPositionFrom2D(x, y);
-
-        const title = prompt('アノテーションのタイトルを入力してください:');
-        const content = prompt('アノテーションの内容を入力してください:');
-
-        if (title && content) {
-          this.createAnnotation({
-            id: Date.now(),
-            position: { x: x, y: y, z: 0 }, // 実際には3D座標を使用
-            title,
-            content
-          });
-        }
-
-        this.addMode = false;
-        document.body.style.cursor = 'default';
-      }
-
-      createAnnotation(data) {
-        const marker = document.createElement('div');
-        marker.className = 'annotation-marker';
-        marker.style.left = `${data.position.x}px`;
-        marker.style.top = `${data.position.y}px`;
-
-        const label = document.createElement('div');
-        label.className = 'annotation-label';
-        label.textContent = data.title;
-        marker.appendChild(label);
-
-        marker.addEventListener('click', () => {
-          this.showAnnotationWindow(data, marker);
-        });
-
-        document.getElementById('annotations-container').appendChild(marker);
-        this.annotations.push({ ...data, element: marker });
-      }
-
-      showAnnotationWindow(annotation, marker) {
-        if (this.activeWindow) {
-          this.activeWindow.remove();
-        }
-
-        const window = document.createElement('div');
-        window.className = 'annotation-window active';
-
-        window.innerHTML = `
-      <div class="annotation-window-header">
-        <div class="annotation-window-title">${annotation.title}</div>
-        <div class="annotation-window-close">✕</div>
-      </div>
-      <div class="annotation-window-content">
-        ${annotation.content}
-      </div>
-    `;
-
-        const markerRect = marker.getBoundingClientRect();
-        window.style.left = `${markerRect.right + 10}px`;
-        window.style.top = `${markerRect.top}px`;
-
-        window.querySelector('.annotation-window-close').addEventListener('click', () => {
-          window.remove();
-          this.activeWindow = null;
-        });
-
-        document.body.appendChild(window);
-        this.activeWindow = window;
-      }
-
-      updateAnnotationPositions() {
-        // Potreeのカメラ移動時にアノテーションの位置を更新
-        this.annotations.forEach(annotation => {
-          // 3D座標から2D座標に変換
-          // const screenPos = viewer.getScreenPosition(annotation.position);
-          // annotation.element.style.left = `${screenPos.x}px`;
-          // annotation.element.style.top = `${screenPos.y}px`;
-        });
-      }
-    }
-    // アノテーションマネージャーの初期化
-    const annotationManager = new AnnotationManager();
-
-    // Potreeのビューア更新時にアノテーションの位置を更新
-    viewer.addEventListener('update', () => {
-      annotationManager.updateAnnotationPositions();
-    });
 
   </script>
 </body>
