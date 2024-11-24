@@ -135,22 +135,21 @@ export default function addPanoramaImage(viewer) {
 
   // カメラマーカーの作成
   function createCameraMarker(position, index) {
-    const geometry = new THREE.ConeGeometry(0.5, 1.2, 4);
-    geometry.rotateX(Math.PI / 2);
-    const material = new THREE.MeshBasicMaterial({
-      color: 0xffff00,
-      wireframe: true,
-      transparent: true,
-      opacity: 0.8, // 透明度調整
-      depthTest: true, // 壁を通して見えないように
-    });
-    const marker = new THREE.Mesh(geometry, material);
+    // 球体のジオメトリを作成 (半径0.3, 幅セグメント16, 高さセグメント16)
+    const geometry = new THREE.SphereGeometry(0.3, 16, 16);
 
-    marker.position.set(
-      position.x,
-      position.y,
-      position.z,
-    );
+    // マテリアルの作成 - 既存の設定を維持しつつ球体用に最適化
+    const material = new THREE.MeshBasicMaterial({
+      color: 0x4287f5,
+      wireframe: false,
+      transparent: true,
+      opacity: 0.1,
+      depthTest: true
+    });
+
+    // 位置の設定
+    const marker = new THREE.Mesh(geometry, material);
+    marker.position.set(position.x, position.y, position.z);
     marker.userData.index = index;
 
     return marker;
@@ -212,7 +211,7 @@ export default function addPanoramaImage(viewer) {
         marker.visible = false; // 現在のセットのマーカーを非表示
       } else {
         marker.visible = true; // 他のマーカーは表示
-        marker.material.color.setHex(0xffff00);
+        // marker.material.color.setHex(0xffff00);
       }
     });
   }
