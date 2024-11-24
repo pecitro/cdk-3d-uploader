@@ -1,0 +1,65 @@
+.annotation-window {
+  display: none;
+  position: fixed;
+  min-width: 300px;
+  max-width: 500px;
+  background: white;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  z-index: 1000;
+}
+
+.annotation-window-header {
+  padding: 8px 12px;
+  background: #f5f5f5;
+  border-bottom: 1px solid #ddd;
+  cursor: move;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.window-title {
+  font-weight: bold;
+  color: #333;
+}
+
+.close-button {
+  background: none;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+  color: #666;
+}
+
+.close-button:hover {
+  color: #333;
+}
+
+.annotation-window-content {
+  padding: 12px;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.annotation-attributes {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 10px;
+}
+
+.annotation-attributes td {
+  padding: 4px 8px;
+  border-bottom: 1px solid #eee;
+}
+
+.attribute-key {
+  font-weight: bold;
+  color: #666;
+  width: 40%;
+}
+
+.attribute-value {
+  color: #333;
+}
